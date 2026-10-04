@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last Minute Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#070d14; --card:#0d1823; --card2:#111f2d; --line:#1b2d3d; --line2:#2a4358;
+  --text:#f2f6f9; --muted:#8fa3b2; --dim:#55697a;
+  --cyan:#5ee0ea; --cyan-ink:#04141a; --accent:#e8884a;
+  --paper:#f4f6f7; --ink:#0b1520; --ink2:#667886; --teal:#0b7f89;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --nav:72px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:var(--nav)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+input,select,textarea{font:inherit;color:var(--text)}
+.mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 28px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--accent);margin-bottom:26px}
+.eyebrow:before{content:"";width:8px;height:8px;background:var(--accent)}
+h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.035em;line-height:1.02}
+h1{font-size:clamp(46px,7.4vw,96px)}
+h2{font-size:clamp(38px,5.4vw,68px)}
+h1 em,h2 em{font-style:normal;color:var(--cyan)}
+.lede{color:var(--muted);font-size:19px;max-width:600px;margin:26px auto 0}
+.center{text-align:center}
+
+/* letter animation */
+.w{display:inline-block;white-space:nowrap}
+.c{display:inline-block;opacity:0;transform:translateY(.6em) rotate(4deg);filter:blur(8px);
+  transition:opacity .7s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .7s ease}
+.in .c{opacity:1;transform:none;filter:none}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+.rv.in{opacity:1;transform:none}
+/* letter roll on hover */
+.rc{display:inline-block;position:relative;overflow:hidden;height:1.25em;line-height:1.25em;vertical-align:top}
+.rc>span{display:inline-block;position:relative;transition:transform .45s cubic-bezier(.7,0,.2,1);transition-delay:calc(var(--i)*16ms)}
+.rc>span:after{content:attr(data-c);position:absolute;left:0;top:100%}
+.roll:hover .rc>span{transform:translateY(-100%)}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;height:var(--nav);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 32px;background:var(--bg);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--serif);font-size:27px;letter-spacing:-.04em;display:flex;align-items:center;gap:8px;font-weight:500}
+.logo i{width:9px;height:9px;border-radius:50%;background:var(--cyan)}
+.tabs-nav{display:flex;gap:6px}
+.tabs-nav a{color:var(--muted);text-decoration:none;padding:8px 18px;position:relative;transition:color .2s}
+.tabs-nav a:hover{color:var(--text)}
+.tabs-nav a.on{color:var(--text)}
+.tabs-nav a.on:after{content:"";position:absolute;left:18px;right:18px;bottom:0;height:2px;background:var(--cyan)}
+.navr{justify-self:end;display:flex;align-items:center;gap:20px}
+.badge{color:var(--accent);border:1px solid rgba(232,136,74,.4);border-radius:999px;padding:6px 14px}
+.cta{background:linear-gradient(100deg,#c6f8fb,#5ee0ea 70%);color:var(--cyan-ink);text-decoration:none;border-radius:14px;padding:15px 26px;display:inline-block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+
+/* hero */
+.hero{padding:88px 0 0}
+.stage{position:relative;margin-top:72px;padding:120px 24px 140px;overflow:hidden;background:
+  radial-gradient(55% 100% at 0% 40%,rgba(232,136,74,.62),transparent 65%),
+  radial-gradient(55% 100% at 100% 25%,rgba(94,224,234,.38),transparent 65%),#0a121b}
+.stage:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 1px,transparent 1px 4px);
+  -webkit-mask-image:linear-gradient(90deg,#000,transparent 20%,transparent 80%,#000);mask-image:linear-gradient(90deg,#000,transparent 20%,transparent 80%,#000);opacity:.7}
+.stage:after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;background:linear-gradient(transparent,var(--bg))}
+.scard{position:relative;z-index:2;max-width:820px;margin:0 auto;background:var(--paper);color:var(--ink);border-radius:24px;padding:30px 30px 22px;box-shadow:0 40px 90px -20px rgba(0,0,0,.6);text-align:left}
+.scard input{width:100%;background:none;border:0;outline:0;color:var(--ink);font-size:clamp(22px,3.2vw,34px);font-weight:500;letter-spacing:-.02em;padding:0 0 22px}
+.scard input::placeholder{color:#8a99a5}
+.schips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.schip{display:flex;align-items:center;gap:8px;border:1px solid #dde4e8;background:#fff;border-radius:10px;padding:8px 14px;font-size:14px;color:var(--ink);transition:.15s}
+.schip:hover{border-color:var(--teal);color:var(--teal)}
+.schip svg{width:15px;height:15px;stroke:var(--ink2);fill:none;stroke-width:1.8}
+.sbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seg2{display:flex;background:#e9eef0;border-radius:14px;padding:5px;gap:2px}
+.seg2 button{padding:10px 20px;border-radius:10px;font-size:16px;color:#6a7a86;font-weight:500;transition:.2s}
+.seg2 button.on{background:#fff;color:var(--teal);box-shadow:0 2px 8px rgba(11,21,32,.1)}
+.send{width:46px;height:46px;border-radius:14px;background:linear-gradient(100deg,#c6f8fb,#5ee0ea);display:grid;place-items:center;transition:transform .15s}
+.send:hover{transform:translateX(3px)}
+.send svg{width:22px;height:22px;stroke:var(--cyan-ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* map */
+.mapsec{margin-top:-40px;position:relative;z-index:3}
+.mapcard{background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden}
+.mapgrid{display:grid;grid-template-columns:1.7fr 1fr}
+.mapbox{position:relative;aspect-ratio:3/2;background:#08121b;border-right:1px solid var(--line);overflow:hidden;isolation:isolate}
+#map{position:absolute;inset:0;background:#08121b;font-family:var(--sans)}
+.leaflet-container a{color:var(--cyan)}
+.leaflet-control-attribution{background:rgba(7,13,20,.7)!important;color:var(--dim)!important;font-size:10px}
+.leaflet-bar a{background:var(--card2);color:var(--text);border-color:var(--line2)}
+.leaflet-bar a:hover{background:var(--line)}
+.pin{width:34px;height:34px;border-radius:50%;background:var(--bg);border:2px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:13px;font-weight:500;display:grid;place-items:center;transition:transform .15s,background .15s,color .15s;cursor:pointer}
+.pin:hover,.pin.hl{background:var(--cyan);color:var(--cyan-ink);transform:scale(1.25)}
+.you{position:relative;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(232,136,74,.25);animation:ping 2.4s infinite}
+.you span{position:absolute;left:50%;top:-24px;transform:translateX(-50%);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+@keyframes ping{50%{box-shadow:0 0 0 14px rgba(232,136,74,0)}}
+.leaflet-tooltip.ltip{background:var(--card2);color:var(--text);border:1px solid var(--line2);border-radius:12px;padding:9px 13px;font-size:13px;box-shadow:none;white-space:nowrap}
+.leaflet-tooltip.ltip:before{display:none}
+.ltip b{display:block;font-weight:600}
+.ltip span{color:var(--muted);font-family:var(--mono);font-size:11.5px}
+.mlist{height:0;min-height:100%;overflow:auto}
+@media(max-width:900px){.mapgrid{grid-template-columns:1fr}.mapbox{border-right:0;border-bottom:1px solid var(--line)}.mlist{height:auto;max-height:340px}}
+.mitem{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:15px 22px;border-bottom:1px solid var(--line);transition:background .15s}
+.mitem:hover,.mitem.hl{background:var(--card2)}
+.mitem .n{flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:12px;display:grid;place-items:center}
+.mitem.hl .n{background:var(--cyan);color:var(--cyan-ink)}
+.mitem b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.mitem span{color:var(--muted);font-size:13px}
+.mitem .p{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--text);white-space:nowrap}
+.row.flash{animation:flash 1.6s ease}
+@keyframes flash{0%,60%{background:rgba(232,136,74,.16)}}
+
+/* sections */
+section.s{padding:130px 0 40px}
+.shead{margin-bottom:64px}
+
+/* scheduling panel */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden}
+.phead{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:20px 32px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.phead .l{color:var(--cyan);letter-spacing:.12em}
+.phead .r{color:var(--muted);letter-spacing:.12em}
+.tools{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 32px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border-radius:999px;padding:7px 15px;font-size:14px;color:var(--muted);border:1px solid transparent;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.on{background:var(--text);color:var(--bg);font-weight:600}
+.types .tab.on{background:none;border-color:var(--cyan);color:var(--cyan);font-weight:500}
+.hours{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;padding:14px 32px 0;color:var(--dim);font-family:var(--mono);font-size:11px}
+.row{padding:22px 32px;border-bottom:1px solid var(--line);transition:background .15s}
+.row:hover{background:var(--card2)}
+.rtop{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:12px;flex-wrap:wrap}
+.name{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.equip{color:var(--muted);font-size:14px;margin-left:10px}
+.meta{color:var(--muted);font-family:var(--mono);font-size:13px;white-space:nowrap}
+.meta b{color:var(--text);font-weight:500}
+.bar{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.seg{height:12px;border-radius:3px;background:#17293a}
+.seg.o{background:var(--cyan);cursor:pointer;transition:transform .12s,opacity .12s}
+.seg.o:hover{transform:scaleY(1.7);opacity:.85}
+.seg.s{background:#fff;box-shadow:0 0 0 2px var(--cyan)}
+.rfoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}
+.det{color:var(--muted);font-size:13px}
+.det:hover{color:var(--cyan)}
+.detail{display:none;margin-top:16px;padding:20px 24px;background:var(--bg);border-radius:18px;grid-template-columns:repeat(3,1fr);gap:24px;font-size:14px}
+.detail.on{display:grid}
+.detail h4{font-family:var(--mono);font-weight:400;text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--dim);margin-bottom:8px}
+.detail li{list-style:none;margin-bottom:3px}
+.detail p{margin-bottom:6px}
+.pfoot{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;color:var(--muted);letter-spacing:.12em;flex-wrap:wrap;gap:12px;font-size:12px}
+.legend{display:flex;gap:20px;letter-spacing:.08em}
+.legend i{display:inline-block;width:20px;height:8px;border-radius:2px;margin-right:8px;vertical-align:middle}
+.empty{padding:70px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--text);font-family:var(--serif);font-weight:400;font-size:28px;margin-bottom:6px;letter-spacing:-.02em}
+
+/* about */
+.about{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}
+.vis{position:relative;aspect-ratio:1/1.02;border-radius:32px;overflow:hidden;display:grid;place-items:center;padding:28px;background:
+  radial-gradient(90% 80% at 85% 90%,rgba(232,136,74,.7),transparent 65%),
+  radial-gradient(80% 70% at 10% 10%,rgba(94,224,234,.28),transparent 60%),#16222d}
+.vis:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.1) 0 1px,transparent 1px 4px);-webkit-mask-image:linear-gradient(135deg,#000,transparent 70%);mask-image:linear-gradient(135deg,#000,transparent 70%)}
+.fcard{position:relative;width:100%;max-width:400px;background:var(--paper);color:var(--ink);border-radius:20px;padding:26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.6);animation:in .5s ease}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.fcard .tag{display:inline-flex;align-items:center;gap:6px;background:#fdeadd;color:#c0561a;border-radius:8px;padding:4px 10px;font-size:13px;margin-bottom:18px}
+.fcard h5{font-size:15px;font-weight:600;margin-bottom:14px}
+.fcard .big{font-family:var(--serif);font-size:72px;letter-spacing:-.04em;line-height:1}
+.fcard .cap{color:var(--ink2);font-size:14px;margin:8px 0 22px}
+.cbar{height:12px;border-radius:99px;background:linear-gradient(90deg,#fff 0 30%,var(--accent) 30%);border:1px solid #d3dce1}
+.clab{display:flex;justify-content:space-between;color:var(--ink2);font-family:var(--mono);font-size:11px;margin-top:8px;text-transform:uppercase}
+.src{color:#8a99a5;font-size:11px;margin-top:16px;line-height:1.4}
+.mrow{padding:12px 0;border-top:1px solid #e3e9ec}
+.mrow:first-of-type{border-top:0;padding-top:0}
+.mrow .t{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px}
+.mrow .t span{color:var(--ink2);font-family:var(--mono);font-size:12px}
+.mbar{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.mbar i{height:7px;border-radius:2px;background:#dbe3e7}
+.mbar i.o{background:var(--teal)}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:1px solid #e3e9ec;font-size:15px}
+.trow:first-of-type{border-top:0;padding-top:0}
+.trow span:first-child{display:flex;align-items:center;gap:12px}
+.trow i{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+.trow b{font-family:var(--mono);font-weight:500;color:var(--ink2);font-size:13px}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{text-align:left;padding:14px 0 14px 28px;position:relative;color:var(--dim);transition:color .3s}
+.item:before{content:"";position:absolute;left:0;top:34px;width:5px;height:5px;background:var(--accent);transition:.3s}
+.item .h{font-family:var(--serif);font-size:clamp(30px,3.6vw,46px);letter-spacing:-.03em;line-height:1.12;display:block}
+.item .d{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s ease}
+.item .d>div{overflow:hidden}
+.item .d p{color:var(--muted);font-size:17px;max-width:440px;padding-top:14px}
+.item.on{color:var(--text)}
+.item.on:before{top:0;bottom:0;width:4px;height:auto;background:var(--accent)}
+.item.on .d{grid-template-rows:1fr}
+.item:hover{color:var(--muted)}.item.on:hover{color:var(--text)}
+
+/* survey */
+.form{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:40px}
+.fl{display:block;margin:0 0 10px;color:var(--text);font-size:15px;font-weight:500}
+.fl small{color:var(--dim);font-weight:400;margin-left:6px}
+.q{margin-bottom:30px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:1px solid var(--line2);border-radius:999px;padding:9px 18px;font-size:15px;color:var(--muted);transition:.15s}
+.opt:hover{border-color:var(--cyan);color:var(--text)}
+.opt.on{background:var(--cyan);border-color:var(--cyan);color:var(--cyan-ink);font-weight:600}
+.stars{display:flex;gap:8px}
+.star{flex:1;max-width:72px;height:52px;border-radius:14px;border:1px solid var(--line2);color:var(--muted);font-weight:600;transition:.15s}
+.star:hover{border-color:var(--cyan);color:var(--cyan)}
+.star.on{background:var(--cyan);border-color:var(--cyan);color:var(--cyan-ink)}
+.scale{display:flex;justify-content:space-between;max-width:376px;font-size:12px;color:var(--dim);margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.inp{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:14px;padding:13px 16px;outline:0;transition:border-color .15s}
+.inp:focus{border-color:var(--cyan)}
+textarea.inp{resize:vertical;min-height:96px}
+.submit{width:100%;border:0;cursor:pointer;margin-top:6px;text-align:center;padding:18px}
+.thanks{text-align:center;padding:40px 0}
+.thanks b{font-family:var(--serif);font-weight:400;font-size:44px;letter-spacing:-.03em;display:block;margin-bottom:8px}
+.thanks span{color:var(--muted)}
+
+/* dock */
+.dock{position:fixed;left:50%;bottom:24px;transform:translate(-50%,160%);transition:transform .35s cubic-bezier(.2,.8,.2,1);z-index:40;display:flex;align-items:center;gap:20px;background:var(--paper);color:var(--ink);border-radius:18px;padding:10px 10px 10px 26px;box-shadow:0 20px 50px rgba(0,0,0,.55);max-width:calc(100% - 32px)}
+.dock.on{transform:translate(-50%,0)}
+.dock .t b{display:block;font-size:15px;font-weight:600;line-height:1.25}
+.dock .t span{font-size:13px;color:var(--ink2)}
+.dock .clear{color:var(--ink2);font-size:14px}
+.dock .cta{border:0;background:var(--ink);color:#fff;white-space:nowrap;padding:14px 22px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(3,7,11,.82);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+.modal.on{display:flex}
+.dlg{background:var(--paper);color:var(--ink);border-radius:28px;max-width:540px;width:100%;padding:36px;animation:in .35s ease}
+.check{width:48px;height:48px;border-radius:14px;background:linear-gradient(100deg,#c6f8fb,#5ee0ea);display:grid;place-items:center;margin-bottom:20px}
+.check svg{width:24px;height:24px;stroke:var(--cyan-ink);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.dlg h3{font-family:var(--serif);font-weight:400;font-size:36px;line-height:1.08;letter-spacing:-.03em}
+.dlg .lead{color:var(--ink2);margin:12px 0 18px}
+.slots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:26px}
+.slots span{background:#fff;border:1px solid #dde4e8;border-radius:8px;padding:5px 11px;font-family:var(--mono);font-size:12px;color:var(--teal)}
+.dlg .acts{display:flex;gap:10px}
+.dlg .cta{border:0;cursor:pointer;flex:1;text-align:center}
+.dlg .cta.ghost{background:#e9eef0;color:var(--ink)}
+
+.hp{position:absolute;left:-9999px;opacity:0}
+.err{display:none;color:#ff8a7a;font-size:14px;margin-bottom:12px}
+.privacy{color:var(--dim);font-size:12.5px;margin-top:16px;text-align:center}
+footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;text-align:center;padding:32px;margin-top:120px}
+
+@media(max-width:900px){
+  nav{grid-template-columns:1fr auto;height:auto;padding:12px 16px;row-gap:6px}
+  .tabs-nav{grid-column:1/-1;grid-row:2;justify-content:center;overflow-x:auto}
+  .navr .badge{display:none}
+  html{scroll-padding-top:110px}
+  .about{grid-template-columns:1fr;gap:40px}
+}
+@media(max-width:700px){
+  .wrap{padding:0 16px}.hero{padding-top:56px}.stage{padding:64px 14px 100px;margin-top:48px}
+  .scard{padding:20px 18px 16px}.seg2 button{padding:9px 12px;font-size:14px}
+  section.s{padding-top:90px}
+  .phead,.tools,.row,.pfoot,.hours{padding-left:18px;padding-right:18px}
+  .hours{display:none}.detail{grid-template-columns:1fr}.two{grid-template-columns:1fr}
+  .form{padding:24px}.dock{padding-left:18px;gap:12px}.dock .clear{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .c,.rv{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><i></i>last minute lab</div>
+  <div class="tabs-nav mono" id="tabs">
+    <a class="roll on" href="#search" data-s="search">Search</a>
+    <a class="roll" href="#schedule" data-s="schedule">Scheduling</a>
+    <a class="roll" href="#about" data-s="about">About</a>
+    <a class="roll" href="#survey" data-s="survey">Survey</a>
+  </div>
+  <div class="navr"><span class="badge mono">Prototype</span><a class="cta roll" href="#schedule">Book a lab</a></div>
+</nav>
+
+<!-- SEARCH -->
+<section id="search" class="hero">
+  <div class="wrap center">
+    <div class="eyebrow mono">Search · Citywide research infrastructure</div>
+    <h1 class="split">The lab you need may already exist <em>nearby.</em></h1>
+    <p class="lede rv">Find equipment and lab space at campus labs, startups, corporate R&amp;D and specialized facilities, then book open hours.</p>
+  </div>
+  <div class="stage rv">
+    <form class="scard" id="form" autocomplete="off">
+      <input id="q" aria-label="Search equipment" placeholder="Find a confocal microscope within 5 km">
+      <div class="schips" id="chips"></div>
+      <div class="sbar">
+        <div class="seg2" id="rad">
+          <button type="button" data-r="2">Within 2 km</button><button type="button" data-r="5" class="on">Within 5 km</button><button type="button" data-r="10">Within 10 km</button>
+        </div>
+        <button class="send" type="submit" aria-label="Search"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </form>
+  </div>
+  <div class="wrap mapsec">
+    <div class="mapcard rv">
+      <div class="phead mono"><span class="l" id="m-l"></span><span class="r">Philadelphia · University City</span></div>
+      <div class="mapgrid">
+        <div class="mapbox" id="mapbox"><div id="map"></div></div>
+        <div class="mlist" id="mlist"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULING -->
+<section id="schedule" class="s">
+  <div class="wrap">
+    <div class="shead center">
+      <div class="eyebrow mono">Scheduling</div>
+      <h2 class="split">Open hours, ready to <em>book.</em></h2>
+      <p class="lede rv">Pick a day, then tap any open block to reserve it. Labs are real Philadelphia-area facilities, but availability, prices and policies are illustrative.</p>
+    </div>
+    <div class="panel rv">
+      <div class="phead mono"><span class="l" id="ph-l"></span><span class="r" id="ph-r"></span></div>
+      <div class="tools">
+        <div class="tabs" id="days"></div>
+        <div class="types tabs" id="types"></div>
+      </div>
+      <div class="hours" id="hours"></div>
+      <div id="rows"></div>
+      <div class="pfoot mono"><span>Availability · tap an open block to book</span>
+        <div class="legend"><span><i style="background:var(--cyan)"></i>Open</span><span><i style="background:#fff;box-shadow:0 0 0 2px var(--cyan)"></i>Selected</span><span><i style="background:#17293a"></i>Booked</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="s">
+  <div class="wrap">
+    <div class="shead center">
+      <div class="eyebrow mono">About</div>
+      <h2 class="split">One city. One catalog. Every <em>idle hour.</em></h2>
+      <p class="lede rv">Research equipment sits unused most of the day while startups, students and researchers can't get access. Last Minute Lab connects the two.</p>
+    </div>
+    <div class="about">
+      <div class="vis rv"><div class="fcard" id="fcard"></div></div>
+      <div class="list rv" id="alist"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SURVEY -->
+<section id="survey" class="s">
+  <div class="wrap">
+    <div class="shead center">
+      <div class="eyebrow mono">Survey</div>
+      <h2 class="split">Would you actually <em>use this?</em></h2>
+      <p class="lede rv">It's a prototype, so honest answers help most. It takes about a minute.</p>
+    </div>
+    <form class="form rv" id="sform">
+      <div id="sbody">
+        <div class="q"><label class="fl">Which best describes you?</label>
+          <div class="opts" data-name="role"></div></div>
+        <div class="q"><label class="fl">How do you find lab equipment today?</label>
+          <div class="opts" data-name="how"></div></div>
+        <div class="q"><label class="fl">How likely are you to use Last Minute Lab?</label>
+          <div class="stars" id="stars"></div>
+          <div class="scale"><span>Not likely</span><span>Very likely</span></div></div>
+        <div class="q two">
+          <div><label class="fl" for="pay">What would you pay per hour? <small>for an instrument you'd use</small></label><input class="inp" id="pay" type="number" min="0" placeholder="e.g. 45"></div>
+          <div><label class="fl" for="em">Email <small>optional</small></label><input class="inp" id="em" type="email" placeholder="you@university.edu"></div>
+        </div>
+        <div class="q"><label class="fl" for="miss">What's missing or confusing?</label>
+          <textarea class="inp" id="miss" placeholder="Anything that would stop you booking a real lab"></textarea></div>
+        <input class="hp" id="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <p class="err" id="serr"></p>
+        <button class="cta submit roll" type="submit">Send survey</button>
+        <p class="privacy">We also record anonymous usage (searches and clicks) to improve this prototype. Your email is optional and only used to follow up.</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<footer class="mono">Last Minute Lab · design prototype · listings use real Philadelphia institutions, but availability, rates and policies are illustrative and no institution has endorsed or is affiliated with this prototype. Anonymous usage (searches and clicks) is recorded to improve it</footer>
+
+<div class="dock" id="dock">
+  <div class="t"><b id="d1"></b><span id="d2"></span></div>
+  <button class="clear" id="dclear">Clear</button>
+  <button class="cta" id="dreq">Request booking</button>
+</div>
+<div class="modal" id="modal"><div class="dlg" id="dlg"></div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const USER={lat:39.9515,lng:-75.1938};   // Penn campus (Houston Hall area)
+const TYPES={campus:'University core',startup:'Startup lab',corporate:'Corporate R&D',specialized:'Research institute / facility'};
+const BLOCKS=['6–8a','8–10a','10–12p','12–2p','2–4p','4–6p','6–8p','8–10p'];
+const LABS=[
+ {id:1,name:'Penn Cytomics & Cell Sorting Shared Resource',type:'campus',equip:'Flow cytometer / cell sorter',model:'35+ analyzers and sorters',lat:39.9478,lng:-75.1957,price:55,busy:.6,kw:'flow cytometer cytometry facs cell sorting sorter analyzer penn perelman',specs:['Analyzers, cell sorters and small-particle detectors','Largest flow facility at Penn','Staff-assisted and self-serve use'],training:'Facility training required',operator:'Optional',samples:'Cell suspensions; BSL-2 by arrangement'},
+ {id:2,name:'Penn Vet Imaging Core',type:'campus',equip:'Confocal microscope',model:'Laser scanning & spinning disk',lat:39.9497,lng:-75.1995,price:50,busy:.5,kw:'microscope imaging confocal fluorescence flim multiphoton tirf sim penn vet',specs:['Laser scanning and spinning-disk confocal','FLIM, multiphoton, TIRF, SIM super-resolution','High-content imaging and analysis'],training:'Core orientation required',operator:'Optional',samples:'Fixed and live cells, tissue, intravital'},
+ {id:3,name:'Penn Genomics & Sequencing Core',type:'campus',equip:'DNA sequencer',model:'NextSeq 2000 · NovaSeq 6000 · MiSeq',lat:39.9480,lng:-75.1950,price:120,busy:.65,kw:'sequencer sequencing genomics dna rna ngs illumina sanger penn',specs:['Illumina MiSeq, NextSeq 2000, NovaSeq 6000','Sanger sequencing on ABI capillary','Library prep and QC support'],training:'Operator-run',operator:'Included',samples:'Prepared libraries, DNA/RNA'},
+ {id:4,name:'Singh Center · Quattrone Nanofabrication Facility',type:'specialized',equip:'Cleanroom (nanofabrication)',model:'Penn Singh Center for Nanotechnology',lat:39.9531,lng:-75.1884,price:39,busy:.55,kw:'cleanroom clean room nanofabrication lithography deposition etching singh nanotechnology',specs:['Public external academic door charge $34–39/hr','Equipment charged separately, $0–165/hr','Lithography, deposition and etch tools'],training:'Cleanroom safety training required',operator:'Not available',samples:'Wafers and substrates'},
+ {id:5,name:'Singh Center · Nanoscale Characterization Facility',type:'specialized',equip:'Electron microscope',model:'Electron microscopy & characterization',lat:39.9534,lng:-75.1879,price:45,busy:.5,kw:'electron microscope tem sem microscopy characterization xrd afm singh nanotechnology',specs:['Public external academic tool rates $10–77/hr','Electron microscopy and surface characterization','Staff-assisted sessions available'],training:'Tool qualification required',operator:'Optional',samples:'Solid-state and thin-film samples'},
+ {id:6,name:'Wistar Proteomics & Metabolomics Facility',type:'specialized',equip:'Mass spectrometer',model:'Proteomics, metabolomics, lipidomics',lat:39.9500,lng:-75.1975,price:130,busy:.7,kw:'mass spectrometer spectrometry proteomics metabolomics lipidomics ms lcms wistar',specs:['High-sensitivity proteomics and metabolomics','Lipidomics analyses','Open to outside researchers'],training:'Operator-run',operator:'Included',samples:'Protein digests, metabolite extracts'},
+ {id:7,name:'Wistar Flow Cytometry Facility',type:'specialized',equip:'Cell sorter',model:'Sterile sorting, up to 6 populations',lat:39.9504,lng:-75.1969,price:75,busy:.55,kw:'flow cytometer cytometry cell sorter sorting facs wistar',specs:['Sterile sorting up to 30,000 cells/sec','Up to 48 fluorochromes','Human-derived samples at BSL-2'],training:'Operator-assisted',operator:'Included',samples:'Mixed or homogeneous cell populations'},
+ {id:8,name:'Pennovation Center',type:'startup',equip:'Wet lab bench',model:'Basic wet & dry lab space',lat:39.9399,lng:-75.1998,price:25,busy:.35,kw:'wet lab bench tissue culture cell culture startup incubator pennovation',specs:['Basic wet and dry labs for startups','Inventor garages and coworking','Short-term bench access'],training:'Site safety orientation',operator:'Not available',samples:'BSL-1 and BSL-2 work, per tenant rules'},
+ {id:9,name:'University City Science Center',type:'startup',equip:'qPCR machine',model:'Shared startup lab · real-time PCR',lat:39.9560,lng:-75.1955,price:20,busy:.4,kw:'qpcr pcr real-time thermocycler dna startup science center incubator',specs:['Real-time PCR system, 96-well','Gradient block','Melt-curve analysis'],training:'None for experienced users',operator:'Not available',samples:'Standard PCR plates'},
+ {id:10,name:'PennDesign Fabrication Lab',type:'campus',equip:'3D printer',model:'FDM and resin printers',lat:39.9510,lng:-75.1924,price:12,busy:.4,kw:'3d printer printing prototyping resin fdm fabrication laser cutter weitzman penn design',specs:['FDM and resin 3D printing','Laser cutting and CNC nearby','Quick-turn prototyping'],training:'Fab lab safety induction',operator:'Optional',samples:'Parts within build volume'},
+ {id:11,name:'Penn Chemistry NMR Facility',type:'campus',equip:'NMR spectrometer',model:'Multi-field NMR',lat:39.9502,lng:-75.1919,price:55,busy:.5,kw:'nmr spectrometer chemistry spectroscopy penn',specs:['Multiple field strengths','Automated sample changers','Variable temperature'],training:'Certified users or operator',operator:'Optional',samples:'Small molecules in deuterated solvents'},
+ {id:12,name:'CHOP Research Institute Imaging Core',type:'specialized',equip:'Confocal microscope',model:'Pediatric research imaging',lat:39.9446,lng:-75.1826,price:65,busy:.55,kw:'microscope imaging confocal fluorescence chop children hospital research',specs:['Confocal and widefield fluorescence','Image analysis workstations','Staff consultation'],training:'Core training required',operator:'Optional',samples:'Fixed and live cells, tissue'},
+ {id:13,name:'Drexel Materials Characterization Core',type:'campus',equip:'X-ray diffractometer',model:'XRD, SEM and thermal analysis',lat:39.9559,lng:-75.1878,price:35,busy:.4,kw:'x-ray diffractometer xrd sem materials characterization drexel',specs:['X-ray diffraction','Scanning electron microscopy','Thermal and mechanical analysis'],training:'30-min induction',operator:'Optional',samples:'Powders, films, bulk solids'},
+ {id:14,name:'Jefferson Bioimaging Shared Resource',type:'campus',equip:'Confocal microscope',model:'Sidney Kimmel Cancer Center',lat:39.9468,lng:-75.1578,price:60,busy:.5,kw:'microscope imaging confocal fluorescence jefferson sidney kimmel',specs:['Laser scanning confocal','Live-cell imaging chamber','Image analysis support'],training:'Core orientation required',operator:'Optional',samples:'Fixed and live cells'},
+ {id:15,name:'Temple Mechanical Testing Lab',type:'campus',equip:'Tensile tester',model:'Universal testing machine',lat:39.9814,lng:-75.1530,price:30,busy:.35,kw:'tensile tester materials testing mechanical engineering temple',specs:['Load frame for tension and compression','Video extensometer','Environmental chamber'],training:'30-min induction',operator:'Optional',samples:'Metals, polymers, composites'},
+ {id:16,name:'Corporate R&D lab, University City',type:'corporate',equip:'HPLC-MS',model:'LC with Q-TOF detector',lat:39.9553,lng:-75.1948,price:65,busy:.55,kw:'hplc ms mass spectrometer chromatography lcms analytical corporate',specs:['UHPLC with DAD','Q-TOF mass detector','Method development support'],training:'Operator-run',operator:'Included',samples:'Small molecules, metabolites'},
+ {id:17,name:'Corporate R&D lab, Navy Yard',type:'corporate',equip:'Cleanroom (ISO 5)',model:'Class 100 bay',lat:39.8935,lng:-75.1745,price:95,busy:.6,kw:'cleanroom clean room fabrication iso corporate navy yard',specs:['ISO 5 laminar flow','Gowning area','Fume hood and spin coater'],training:'Cleanroom induction (1 hr)',operator:'Not available',samples:'Non-toxic materials'}
+];
+const SUGGEST=['Confocal microscope','Flow cytometer','qPCR','3D printer','Mass spectrometer','Cleanroom'];
+const TYPING=['Find a confocal microscope within 5 km','Book a flow cytometer for tomorrow','Rent time on a mass spectrometer','Search resin 3D printers near campus','Look for a cleanroom this week'];
+
+function hav(a,b,c,d){const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const DAYS=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return{i,
+  label:i===0?'Today':i===1?'Tomorrow':d.toLocaleDateString('en-US',{weekday:'short',day:'numeric'}),
+  short:i===0?'today':i===1?'tomorrow':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toLowerCase()}});
+LABS.forEach(l=>{const r=rng(l.id*977);l.av=DAYS.map(()=>BLOCKS.map(()=>r()>l.busy));
+  l.dist=Math.round(hav(USER.lat,USER.lng,l.lat,l.lng)*10)/10});
+
+const S={q:'',rad:5,day:0,type:'',lab:null,sel:new Set(),open:new Set(),rating:0,role:'',how:''};
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+
+/* ---------- data collection (Supabase) ---------- */
+// Paste your Supabase project URL and anon (public) key here. Leave blank for demo mode (nothing is sent).
+const SB={url:'https://prbfwznvynwwkpekovmo.supabase.co',key:'sb_publishable_cgesMRMuHeHU3V-bx5FEbg_H98BZ3ML'};
+const SID=(()=>{try{let v=localStorage.getItem('llab_sid');if(!v){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36));localStorage.setItem('llab_sid',v)}return v}catch(e){return Math.random().toString(36).slice(2)}})();
+async function send(table,row){
+  if(!SB.url||!SB.key){console.info('[demo mode] '+table,row);try{const k='llab_'+table,a=JSON.parse(localStorage.getItem(k)||'[]');a.push(row);localStorage.setItem(k,JSON.stringify(a))}catch(e){}return true}
+  try{const r=await fetch(SB.url+'/rest/v1/'+table,{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',apikey:SB.key,Authorization:'Bearer '+SB.key,Prefer:'return=minimal'},body:JSON.stringify(row)});return r.ok}
+  catch(e){return false}
+}
+function track(event,props){send('events',{session_id:SID,event,props:props||{}})}
+const seen=new Set();
+function trackOnce(event,key){if(seen.has(event+key))return;seen.add(event+key);track(event,{section:key})}
+let searchT;
+function trackSearch(now){clearTimeout(searchT);searchT=setTimeout(()=>track('search',{q:S.q,radius_km:S.rad,results:filtered().length}),now?0:900)}
+
+/* ---------- letter animation helpers ---------- */
+function splitLetters(el){
+  const walk=n=>{[...n.childNodes].forEach(ch=>{
+    if(ch.nodeType===3){
+      const f=document.createDocumentFragment();
+      ch.textContent.split(/(\s+)/).forEach(tok=>{
+        if(!tok)return;
+        if(/^\s+$/.test(tok)){f.append(' ');return}
+        const w=document.createElement('span');w.className='w';
+        [...tok].forEach(c=>{const s=document.createElement('span');s.className='c';s.textContent=c;w.append(s)});
+        f.append(w)});
+      ch.replaceWith(f);
+    }else walk(ch)})};
+  el.setAttribute('aria-label',el.textContent);walk(el);
+  el.querySelectorAll('.c').forEach((c,i)=>c.style.transitionDelay=Math.min(i*26,900)+'ms');
+}
+function rollLetters(el){
+  const t=el.textContent;el.setAttribute('aria-label',t);
+  el.innerHTML='<span aria-hidden="true">'+[...t].map((c,i)=>`<span class="rc"><span style="--i:${i}" data-c="${c===' '?' ':c}">${c===' '?' ':c}</span></span>`).join('')+'</span>';
+}
+$$('.split').forEach(splitLetters);
+$$('.roll').forEach(rollLetters);
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.2});
+$$('.split,.rv').forEach(el=>io.observe(el));
+setTimeout(()=>$$('#search .split').forEach(el=>el.classList.add('in')),150);
+
+/* scrollspy */
+const spy=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){
+  $$('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.s===e.target.id));trackOnce('section_view',e.target.id)}}),{rootMargin:'-45% 0px -50% 0px'});
+$$('section[id]').forEach(s=>spy.observe(s));
+
+/* typed placeholder */
+(function(){
+  const inp=$('#q');let p=0,i=0,del=false;
+  const tick=()=>{
+    if(inp.value||document.activeElement===inp){setTimeout(tick,600);return}
+    const t=TYPING[p];
+    if(!del){i++;if(i>=t.length){del=true;inp.placeholder=t;return setTimeout(tick,2200)}}
+    else{i-=2;if(i<=0){i=0;del=false;p=(p+1)%TYPING.length;inp.placeholder=' ';return setTimeout(tick,350)}}
+    inp.placeholder=t.slice(0,i)||' ';
+    setTimeout(tick,del?22:55);
+  };
+  if(!matchMedia('(prefers-reduced-motion:reduce)').matches)setTimeout(()=>{del=true;i=TYPING[0].length;tick()},1800);
+})();
+
+/* ---------- search ---------- */
+const chipIcon='<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>';
+$('#chips').innerHTML=SUGGEST.map(c=>`<button type="button" class="schip">${chipIcon}${c}</button>`).join('');
+$('#chips').onclick=e=>{const b=e.target.closest('.schip');if(b){track('chip_click',{chip:b.textContent});$('#q').value=b.textContent;apply(true)}};
+$('#rad').onclick=e=>{const r=e.target.dataset.r;if(!r)return;S.rad=+r;
+  $$('#rad button').forEach(b=>b.classList.toggle('on',b.dataset.r===r));apply(false)};
+$('#form').onsubmit=e=>{e.preventDefault();apply(true)};
+$('#q').oninput=()=>apply(false);
+function apply(scroll){S.q=$('#q').value.trim();render();trackSearch(scroll);
+  if(scroll)$('#schedule').scrollIntoView({behavior:'smooth'})}
+
+/* ---------- scheduling ---------- */
+$('#days').innerHTML=DAYS.map(d=>`<button class="tab ${d.i?'':'on'}" data-d="${d.i}">${d.label}</button>`).join('');
+$('#days').onclick=e=>{const d=e.target.dataset.d;if(d===undefined)return;S.day=+d;track('day_change',{day:+d});
+  $$('#days .tab').forEach(t=>t.classList.toggle('on',t.dataset.d===d));render()};
+$('#types').innerHTML=[['','All'],...Object.entries(TYPES)].map(([k,v],i)=>`<button class="tab ${i?'':'on'}" data-t="${k}">${v}</button>`).join('');
+$('#types').onclick=e=>{const t=e.target.dataset.t;if(t===undefined)return;S.type=t;track('type_filter',{type:t});
+  $$('#types .tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));render()};
+$('#hours').innerHTML=BLOCKS.map(b=>`<span>${b}</span>`).join('');
+
+function filtered(){
+  const toks=S.q.toLowerCase().split(/\s+/).filter(Boolean);
+  return LABS.filter(l=>{const h=(l.name+' '+l.equip+' '+l.model+' '+l.kw+' '+TYPES[l.type]).toLowerCase();
+    return l.dist<=S.rad&&toks.every(t=>h.includes(t))&&(!S.type||l.type===S.type)}).sort((a,b)=>a.dist-b.dist);
+}
+function render(){
+  const r=filtered();
+  $('#ph-l').textContent='Search: '+(S.q||'all equipment');
+  $('#ph-r').textContent='Within '+S.rad+' km';
+  $('#rows').innerHTML=r.length?r.map(l=>{
+    const n=l.av[S.day].filter(Boolean).length;
+    return `<div class="row" data-id="${l.id}">
+      <div class="rtop"><div><span class="name">${l.name}</span><span class="equip">${l.equip} · ${l.model}</span></div>
+        <div class="meta">${l.dist.toFixed(1)} km · <b>$${l.price}/hr</b> · ${DAYS[S.day].short}</div></div>
+      <div class="bar">${l.av[S.day].map((o,b)=>`<span class="seg ${o?(S.sel.has(l.id+'|'+S.day+'|'+b)?'o s':'o'):''}" ${o?`data-b="${b}" title="${BLOCKS[b]} · open"`:`title="${BLOCKS[b]} · booked"`}></span>`).join('')}</div>
+      <div class="rfoot"><button class="det" data-det="${l.id}">${S.open.has(l.id)?'Hide details ▴':'Details ▾'}</button>
+        <span>${n?n*2+' hrs open':'Fully booked'} · ${TYPES[l.type]}</span></div>
+      <div class="detail ${S.open.has(l.id)?'on':''}">
+        <div><h4>Equipment</h4><ul>${l.specs.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+        <div><h4>Access</h4><p>${l.training}</p><p>Operator: ${l.operator}</p></div>
+        <div><h4>Samples</h4><p>${l.samples}</p><p>Illustrative rates and availability</p></div></div>
+    </div>`}).join('')
+   :`<div class="empty"><b>No labs match yet</b>Try a wider radius or a different search.</div>`;
+  renderMap(r);
+  dock();
+}
+
+/* map: real Philadelphia basemap (Leaflet + OpenStreetMap/CARTO tiles) */
+const MAP=L.map('map',{scrollWheelZoom:false,zoomSnap:.5}).setView([USER.lat,USER.lng],13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18,subdomains:'abcd',
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(MAP);
+const LAYER=L.layerGroup().addTo(MAP);
+const RING=L.circle([USER.lat,USER.lng],{radius:5000,color:'#5ee0ea',weight:2,opacity:.55,dashArray:'6 8',fillColor:'#5ee0ea',fillOpacity:.05,interactive:false}).addTo(MAP);
+let lastRad=null;
+function renderMap(r){
+  const ids=r.map(l=>l.id);
+  $('#m-l').textContent=r.length+' lab'+(r.length===1?'':'s')+' within '+S.rad+' km';
+  RING.setRadius(S.rad*1000);
+  if(lastRad!==S.rad){MAP.fitBounds(RING.getBounds(),{padding:[24,24],animate:lastRad!==null});lastRad=S.rad}
+  LAYER.clearLayers();
+  L.marker([USER.lat,USER.lng],{icon:L.divIcon({className:'',html:'<div class="you"><span>YOU</span></div>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false,zIndexOffset:500}).addTo(LAYER);
+  LABS.forEach(l=>{const n=ids.indexOf(l.id);
+    if(n<0){L.circleMarker([l.lat,l.lng],{radius:4,color:'#2a4358',fillColor:'#2a4358',fillOpacity:1,weight:1,interactive:false}).addTo(LAYER);return}
+    L.marker([l.lat,l.lng],{icon:L.divIcon({className:'',html:`<button class="pin" data-id="${l.id}" aria-label="${l.name}">${n+1}</button>`,iconSize:[34,34],iconAnchor:[17,17]}),riseOnHover:true})
+     .bindTooltip(`<b>${l.name}</b><span>${l.equip} · $${l.price}/hr · ${l.dist.toFixed(1)} km</span>`,{direction:'top',offset:[0,-18],className:'ltip'})
+     .on('click',()=>gotoLab(l.id)).on('mouseover',()=>hlLab(l.id)).on('mouseout',()=>hlLab(null)).addTo(LAYER)});
+  $('#mlist').innerHTML=r.length?r.map((l,n)=>`<button class="mitem" data-id="${l.id}"><span class="n">${n+1}</span>
+      <div><b>${l.name}</b><span>${l.equip} · ${l.dist.toFixed(1)} km</span></div><span class="p">$${l.price}/hr</span></button>`).join('')
+    :`<div class="empty"><b>No labs here</b>Try a wider radius.</div>`;
+}
+function hlLab(id){$$('.pin,.mitem').forEach(e=>e.classList.toggle('hl',+e.dataset.id===id))}
+function gotoLab(id){
+  track('map_open_lab',{lab:id});
+  S.open.add(id);render();
+  const row=document.querySelector(`.row[data-id="${id}"]`);if(!row)return;
+  row.scrollIntoView({behavior:'smooth',block:'center'});
+  row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),1800);
+}
+$('#mlist').onmouseover=e=>{const b=e.target.closest('[data-id]');hlLab(b?+b.dataset.id:null)};
+$('#mlist').onmouseleave=()=>hlLab(null);
+$('#mlist').onclick=e=>{const b=e.target.closest('[data-id]');if(b)gotoLab(+b.dataset.id)};
+$('#rows').onclick=e=>{
+  const det=e.target.closest('[data-det]');
+  if(det){const id=+det.dataset.det;S.open.has(id)?S.open.delete(id):S.open.add(id);track('lab_details',{lab:id,open:S.open.has(id)});render();return}
+  const seg=e.target.closest('.seg.o');if(!seg)return;
+  const id=+seg.closest('.row').dataset.id,k=id+'|'+S.day+'|'+seg.dataset.b;
+  if(S.lab!==id){S.sel.clear();S.lab=id}
+  S.sel.has(k)?S.sel.delete(k):S.sel.add(k);
+  track('slot_toggle',{lab:id,day:S.day,block:+seg.dataset.b,selected:S.sel.has(k)});
+  if(!S.sel.size)S.lab=null;
+  render();
+};
+
+/* dock + confirmation */
+function total(){const l=LABS.find(x=>x.id===S.lab);const hrs=S.sel.size*2,sub=hrs*(l?l.price:0);return{l,hrs,tot:(sub*1.08).toFixed(2)}}
+function dock(){
+  const on=S.sel.size>0;$('#dock').classList.toggle('on',on);
+  if(on){const t=total();$('#d1').textContent=t.l.name+' · '+t.hrs+' hrs';$('#d2').textContent='Estimated $'+t.tot+' incl. 8% service fee'}
+}
+$('#dclear').onclick=()=>{S.sel.clear();S.lab=null;render()};
+$('#dreq').onclick=()=>{
+  const {l,hrs,tot}=total();
+  track('booking_requested',{lab:l.id,hours:hrs,total:+tot});
+  const keys=[...S.sel].map(k=>k.split('|').map(Number).slice(1)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  $('#dlg').innerHTML=`<div class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+   <h3>Request sent to ${l.name}</h3>
+   <p class="lead">${hrs} hours on the ${l.model} · estimated $${tot}. Most labs reply within an hour.</p>
+   <div class="slots">${keys.map(([d,b])=>`<span>${DAYS[d].label} · ${BLOCKS[b]}</span>`).join('')}</div>
+   <div class="acts"><a class="cta ghost" href="#schedule" id="keep">Keep browsing</a><a class="cta" href="#survey" id="tosurvey">Take the survey</a></div>`;
+  $('#modal').classList.add('on');
+  $('#keep').onclick=closeModal;$('#tosurvey').onclick=closeModal;
+};
+function closeModal(){$('#modal').classList.remove('on');S.sel.clear();S.lab=null;render()}
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
+
+/* ---------- about ---------- */
+const ABOUT=[
+ {h:'Access what you can’t buy',d:'Find confocal microscopes, sequencers and cleanrooms near you, and book exactly the hours you need.',
+  card:()=>`<span class="tag">Search: confocal microscope</span>
+   ${[['University imaging core','2.1 km · today',[1,1,0,0,1,1,1,0]],['Biotech incubator, Floor 3','3.4 km · tomorrow',[0,1,1,1,0,0,1,1]],['Corporate R&D campus','4.8 km · this week',[1,0,0,1,1,0,1,1]]]
+   .map(([n,m,a])=>`<div class="mrow"><div class="t">${n}<span>${m}</span></div><div class="mbar">${a.map(x=>`<i class="${x?'o':''}"></i>`).join('')}</div></div>`).join('')}`},
+ {h:'Turn idle hours into revenue',d:'Equipment sits unused most of the day. Labs can rent out idle capacity to cover costs and fund research.',
+  card:()=>`<span class="tag">Unsold hours</span>
+   <div class="big">25–35%</div><div class="cap">of capital equipment capacity actually used</div>
+   <div class="cbar"></div><div class="clab"><span>6am</span><span>noon</span><span>6pm</span></div>
+   <div class="src">Utilization: McKinsey via Lab Manager (2025); MachineMetrics (2022).</div>`},
+ {h:'Work across labs',d:'One catalog connects campus labs, startups, corporate R&D and specialized facilities, so collaborations start with a booking.',
+  card:()=>`<span class="tag">Last Minute Lab network</span>
+   ${Object.entries(TYPES).map(([k,v])=>`<div class="trow"><span><i></i>${v}</span><b>${LABS.filter(l=>l.type===k).length} listed</b></div>`).join('')}`}
+];
+let aIdx=0,aAuto=true;
+$('#alist').innerHTML=ABOUT.map((a,i)=>`<button class="item" data-i="${i}"><span class="h">${a.h}</span><span class="d"><div><p>${a.d}</p></div></span></button>`).join('');
+function setAbout(i){aIdx=i;$$('.item').forEach((b,n)=>b.classList.toggle('on',n===i));
+  const c=$('#fcard');c.style.animation='none';c.offsetHeight;c.style.animation='';c.innerHTML=ABOUT[i].card()}
+$('#alist').onclick=e=>{const b=e.target.closest('.item');if(b){aAuto=false;setAbout(+b.dataset.i)}};
+setAbout(0);
+setInterval(()=>{if(aAuto&&!document.hidden)setAbout((aIdx+1)%ABOUT.length)},6000);
+
+/* ---------- survey ---------- */
+function opts(name,list){const el=$(`[data-name="${name}"]`);
+  el.innerHTML=list.map(o=>`<button type="button" class="opt">${o}</button>`).join('');
+  el.onclick=e=>{const b=e.target.closest('.opt');if(!b)return;S[name]=b.textContent;
+    el.querySelectorAll('.opt').forEach(x=>x.classList.toggle('on',x===b))}}
+opts('role',['PhD student','Postdoc','Faculty','Startup founder','Industry researcher','Other']);
+opts('how',['Ask colleagues','Search university websites','Email core facilities','I don’t know where to look','Other']);
+$('#stars').innerHTML=[1,2,3,4,5].map(n=>`<button class="star" type="button" data-n="${n}">${n}</button>`).join('');
+$('#stars').onclick=e=>{const n=+e.target.dataset.n;if(!n)return;S.rating=n;
+  $$('.star').forEach(s=>s.classList.toggle('on',+s.dataset.n===n))};
+$('#sform').onsubmit=async e=>{e.preventDefault();
+  if($('#hp').value)return;
+  const err=$('#serr'),miss=$('#miss').value.trim();
+  if(!S.rating&&!S.role&&!miss){err.textContent='Please answer at least one question.';err.style.display='block';return}
+  err.style.display='none';
+  const btn=$('#sform .submit');btn.disabled=true;
+  const pay=$('#pay').value;
+  const ok=await send('survey_responses',{session_id:SID,role:S.role||null,how_find:S.how||null,likelihood:S.rating||null,
+    pay_per_hour:pay!==''?+pay:null,email:$('#em').value.trim()||null,missing:miss||null});
+  if(ok)$('#sbody').innerHTML=`<div class="thanks"><b>Thank you.</b><span>Your answers help us decide what to build next.</span></div>`;
+  else{btn.disabled=false;err.textContent='Something went wrong sending your answers. Please try again.';err.style.display='block'}
+};
+
+track('session_start',{w:innerWidth,ref:document.referrer||null});
+render();
+</script>
+</body>
+</html>
