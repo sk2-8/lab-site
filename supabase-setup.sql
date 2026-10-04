@@ -8,10 +8,12 @@ create table public.survey_responses (
   session_id   text     check (char_length(session_id) <= 64),
   role         text     check (char_length(role) <= 60),
   how_find     text     check (char_length(how_find) <= 120),
-  likelihood   smallint check (likelihood between 1 and 5),
+  interest     smallint check (interest between 1 and 5),
+  others_value smallint check (others_value between 1 and 5),
+  experience   smallint check (experience between 1 and 5),
   pay_per_hour numeric  check (pay_per_hour between 0 and 100000),
   email        text     check (char_length(email) <= 200),
-  missing      text     check (char_length(missing) <= 2000)
+  comments     text     check (char_length(comments) <= 2000)
 );
 
 create table public.events (

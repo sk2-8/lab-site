@@ -361,15 +361,21 @@ footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;text-ali
           <div class="opts" data-name="role"></div></div>
         <div class="q"><label class="fl">How do you find lab equipment today?</label>
           <div class="opts" data-name="how"></div></div>
-        <div class="q"><label class="fl">How likely are you to use Last Minute Lab?</label>
-          <div class="stars" id="stars"></div>
-          <div class="scale"><span>Not likely</span><span>Very likely</span></div></div>
+        <div class="q"><label class="fl">How interested are you in Last Minute Lab?</label>
+          <div class="stars" data-scale="interest"></div>
+          <div class="scale"><span>Not interested</span><span>Very interested</span></div></div>
+        <div class="q"><label class="fl">Do you think other researchers and founders would find this valuable?</label>
+          <div class="stars" data-scale="others_value"></div>
+          <div class="scale"><span>Not at all</span><span>Extremely valuable</span></div></div>
+        <div class="q"><label class="fl">How much did you like the experience of finding and booking a lab here?</label>
+          <div class="stars" data-scale="experience"></div>
+          <div class="scale"><span>Didn’t like it</span><span>Loved it</span></div></div>
         <div class="q two">
           <div><label class="fl" for="pay">What would you pay per hour? <small>for an instrument you'd use</small></label><input class="inp" id="pay" type="number" min="0" placeholder="e.g. 45"></div>
           <div><label class="fl" for="em">Email <small>optional</small></label><input class="inp" id="em" type="email" placeholder="you@university.edu"></div>
         </div>
-        <div class="q"><label class="fl" for="miss">What's missing or confusing?</label>
-          <textarea class="inp" id="miss" placeholder="Anything that would stop you booking a real lab"></textarea></div>
+        <div class="q"><label class="fl" for="miss">Any other comments / questions?</label>
+          <textarea class="inp" id="miss" placeholder="Share anything on your mind"></textarea></div>
         <input class="hp" id="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <p class="err" id="serr"></p>
         <button class="cta submit roll" type="submit">Send survey</button>
@@ -422,7 +428,7 @@ const DAYS=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()+i)
 LABS.forEach(l=>{const r=rng(l.id*977);l.av=DAYS.map(()=>BLOCKS.map(()=>r()>l.busy));
   l.dist=Math.round(hav(USER.lat,USER.lng,l.lat,l.lng)*10)/10});
 
-const S={q:'',rad:5,day:0,type:'',lab:null,sel:new Set(),open:new Set(),rating:0,role:'',how:''};
+const S={q:'',rad:5,day:0,type:'',lab:null,sel:new Set(),open:new Set(),role:'',how:'',interest:0,others_value:0,experience:0};
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 
@@ -696,18 +702,19 @@ function opts(name,list){const el=$(`[data-name="${name}"]`);
     el.querySelectorAll('.opt').forEach(x=>x.classList.toggle('on',x===b))}}
 opts('role',['PhD student','Postdoc','Faculty','Startup founder','Industry researcher','Other']);
 opts('how',['Ask colleagues','Search university websites','Email core facilities','I don’t know where to look','Other']);
-$('#stars').innerHTML=[1,2,3,4,5].map(n=>`<button class="star" type="button" data-n="${n}">${n}</button>`).join('');
-$('#stars').onclick=e=>{const n=+e.target.dataset.n;if(!n)return;S.rating=n;
-  $$('.star').forEach(s=>s.classList.toggle('on',+s.dataset.n===n))};
+$$('[data-scale]').forEach(el=>{const name=el.dataset.scale;
+  el.innerHTML=[1,2,3,4,5].map(n=>`<button class="star" type="button" data-n="${n}">${n}</button>`).join('');
+  el.onclick=e=>{const n=+e.target.dataset.n;if(!n)return;S[name]=n;
+    el.querySelectorAll('.star').forEach(b=>b.classList.toggle('on',+b.dataset.n===n))}});
 $('#sform').onsubmit=async e=>{e.preventDefault();
   if($('#hp').value)return;
   const err=$('#serr'),miss=$('#miss').value.trim();
-  if(!S.rating&&!S.role&&!miss){err.textContent='Please answer at least one question.';err.style.display='block';return}
+  if(!S.interest&&!S.others_value&&!S.experience&&!S.role&&!miss){err.textContent='Please answer at least one question.';err.style.display='block';return}
   err.style.display='none';
   const btn=$('#sform .submit');btn.disabled=true;
   const pay=$('#pay').value;
-  const ok=await send('survey_responses',{session_id:SID,role:S.role||null,how_find:S.how||null,likelihood:S.rating||null,
-    pay_per_hour:pay!==''?+pay:null,email:$('#em').value.trim()||null,missing:miss||null});
+  const ok=await send('survey_responses',{session_id:SID,role:S.role||null,how_find:S.how||null,interest:S.interest||null,others_value:S.others_value||null,experience:S.experience||null,
+    pay_per_hour:pay!==''?+pay:null,email:$('#em').value.trim()||null,comments:miss||null});
   if(ok)$('#sbody').innerHTML=`<div class="thanks"><b>Thank you.</b><span>Your answers help us decide what to build next.</span></div>`;
   else{btn.disabled=false;err.textContent='Something went wrong sending your answers. Please try again.';err.style.display='block'}
 };
