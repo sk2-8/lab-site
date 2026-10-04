@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
   --bg:#070d14; --card:#0d1823; --card2:#111f2d; --line:#1b2d3d; --line2:#2a4358;
@@ -89,21 +88,21 @@ nav{position:sticky;top:0;z-index:50;height:var(--nav);display:grid;grid-templat
 .mapcard{background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden}
 .mapgrid{display:grid;grid-template-columns:1.7fr 1fr}
 .mapbox{position:relative;aspect-ratio:3/2;background:#08121b;border-right:1px solid var(--line);overflow:hidden;isolation:isolate}
-#map{position:absolute;inset:0;background:#08121b;font-family:var(--sans)}
-.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
-.leaflet-container a{color:var(--cyan)}
-.leaflet-control-attribution{background:rgba(7,13,20,.7)!important;color:var(--dim)!important;font-size:10px}
-.leaflet-bar a{background:var(--card2);color:var(--text);border-color:var(--line2)}
-.leaflet-bar a:hover{background:var(--line)}
-.pin{width:34px;height:34px;border-radius:50%;background:var(--bg);border:2px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:13px;font-weight:500;display:grid;place-items:center;transition:transform .15s,background .15s,color .15s;cursor:pointer}
-.pin:hover,.pin.hl{background:var(--cyan);color:var(--cyan-ink);transform:scale(1.25)}
-.you{position:relative;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(232,136,74,.25);animation:ping 2.4s infinite}
+#mapsvg,#mapsvg svg{position:absolute;inset:0;width:100%;height:100%}
+.pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:50%;background:var(--bg);border:2px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:12px;font-weight:500;display:grid;place-items:center;transition:transform .15s,background .15s,color .15s;cursor:pointer;z-index:2}
+.pin:hover,.pin.hl{background:var(--cyan);color:var(--cyan-ink);transform:scale(1.25);z-index:4}
+.dot{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#2a4358}
+.you{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(232,136,74,.25);animation:ping 2.4s infinite;z-index:3}
 .you span{position:absolute;left:50%;top:-24px;transform:translateX(-50%);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
 @keyframes ping{50%{box-shadow:0 0 0 14px rgba(232,136,74,0)}}
-.leaflet-tooltip.ltip{background:var(--card2);color:var(--text);border:1px solid var(--line2);border-radius:12px;padding:9px 13px;font-size:13px;box-shadow:none;white-space:nowrap}
-.leaflet-tooltip.ltip:before{display:none}
-.ltip b{display:block;font-weight:600}
-.ltip span{color:var(--muted);font-family:var(--mono);font-size:11.5px}
+.maptip{position:absolute;pointer-events:none;background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:9px 13px;font-size:13px;opacity:0;transition:opacity .12s;transform:translate(-50%,-140%);white-space:nowrap;z-index:6}
+.maptip b{display:block;font-weight:600}
+.maptip span{color:var(--muted);font-family:var(--mono);font-size:11.5px}
+.zoomctl{position:absolute;top:14px;left:14px;z-index:5;display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.zoomctl button{width:38px;height:38px;background:var(--card2);font-size:20px;color:var(--text)}
+.zoomctl button+button{border-top:1px solid var(--line2)}
+.zoomctl button:hover{background:var(--line)}
+.maplabel{position:absolute;left:14px;bottom:10px;color:var(--dim);font-size:11px;z-index:5}
 .mlist{height:0;min-height:100%;overflow:auto}
 @media(max-width:900px){.mapgrid{grid-template-columns:1fr}.mapbox{border-right:0;border-bottom:1px solid var(--line)}.mlist{height:auto;max-height:340px}}
 .mitem{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:15px 22px;border-bottom:1px solid var(--line);transition:background .15s}
@@ -304,7 +303,7 @@ footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;text-ali
     <div class="mapcard rv">
       <div class="phead mono"><span class="l" id="m-l"></span><span class="r">Philadelphia · University City</span></div>
       <div class="mapgrid">
-        <div class="mapbox" id="mapbox"><div id="map"></div></div>
+        <div class="mapbox" id="mapbox"><div id="mapsvg"></div><div id="pins"></div><div class="maptip" id="tip"></div><span class="maplabel mono">Schematic map · not to scale</span><div class="zoomctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div></div>
         <div class="mlist" id="mlist"></div>
       </div>
     </div>
@@ -389,7 +388,6 @@ footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;text-ali
 </div>
 <div class="modal" id="modal"><div class="dlg" id="dlg"></div></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const USER={lat:39.9515,lng:-75.1938};   // Penn campus (Houston Hall area)
 const TYPES={campus:'University core',startup:'Startup lab',corporate:'Corporate R&D',specialized:'Research institute / facility'};
@@ -535,33 +533,90 @@ function render(){
   dock();
 }
 
-/* map: real Philadelphia basemap (Leaflet + OpenStreetMap/CARTO tiles) */
-const MAP=L.map('map',{scrollWheelZoom:false,zoomSnap:.5}).setView([USER.lat,USER.lng],13);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(MAP);
-const LAYER=L.layerGroup().addTo(MAP);
-const RING=L.circle([USER.lat,USER.lng],{radius:5000,color:'#5ee0ea',weight:2,opacity:.55,dashArray:'6 8',fillColor:'#5ee0ea',fillOpacity:.05,interactive:false}).addTo(MAP);
-let lastSig=null;
+/* map: schematic Philadelphia (drawn in SVG, no external tiles) */
+const GEO={
+  schuylkill:[[39.985,-75.2080],[39.975,-75.1930],[39.966,-75.1880],[39.960,-75.1850],[39.9524,-75.1878],[39.945,-75.1905],[39.938,-75.1945],[39.928,-75.2010],[39.915,-75.2040],[39.900,-75.2010],[39.885,-75.1950]],
+  delaware:[[39.995,-75.0950],[39.970,-75.1270],[39.946,-75.1385],[39.920,-75.1440],[39.905,-75.1530],[39.888,-75.1690],[39.880,-75.1850]],
+  ew:[['Market',39.9524,1],['Chestnut',39.9508],['Walnut',39.9492,1],['Locust',39.9476],['Spruce',39.9460,1],['Pine',39.9444],['Lombard',39.9428],['South',39.9412,1],['Arch',39.9540],['Race',39.9556],['Vine',39.9572,1],['Spring Garden',39.9607,1],['Girard',39.9715,1],['Washington',39.9355,1],['Snyder',39.9250]],
+  ns:[['Broad',-75.1635,1],['10th',-75.1578],['20th',-75.1737],['30th',-75.1820,1],['32nd',-75.1884],['34th',-75.1932,1],['36th',-75.1975],['38th',-75.2003,1],['40th',-75.2035]],
+  zones:[['PENN',[[39.9535,-75.1975],[39.9535,-75.1895],[39.9490,-75.1895],[39.9490,-75.1975]]],['DREXEL',[[39.9588,-75.1930],[39.9588,-75.1862],[39.9540,-75.1862],[39.9540,-75.1930]]]]
+};
+const KX=111320*Math.cos(39.95*Math.PI/180),KY=110540;
+function fitView(pts,z){
+  const xs=pts.map(p=>p[1]*KX),ys=pts.map(p=>p[0]*KY);
+  let cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+  if(z>1){cx=USER.lng*KX;cy=USER.lat*KY}
+  const w=Math.max((Math.max(...xs)-Math.min(...xs))*1.5,1900),h=Math.max((Math.max(...ys)-Math.min(...ys))*1.5,1270);
+  const sc=Math.min(1200/w,800/h)*z;
+  return{sc,P:(lat,lng)=>[600+(lng*KX-cx)*sc,400-(lat*KY-cy)*sc]};
+}
+const ewLat=(b,lng)=>b+0.121*(-75.1635-lng);
+const nsLng=(l0,lat)=>l0+0.2035*(lat-39.95);
+function mapSVG(V,u){
+  const P=V.P,d=pts=>pts.map((p,i)=>(i?'L':'M')+P(p[0],p[1]).map(n=>n.toFixed(1)).join(' ')).join('');
+  let o=`<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"><rect width="1200" height="800" fill="#08121b"/>`;
+  GEO.zones.forEach(([n,z])=>{const c=P(z.reduce((a,p)=>a+p[0],0)/4,z.reduce((a,p)=>a+p[1],0)/4);
+    o+=`<path d="${d(z)}Z" fill="rgba(94,224,234,.05)" stroke="rgba(94,224,234,.22)" stroke-width="1"/><text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" fill="#3f6677" font-family="JetBrains Mono,monospace" font-size="11" letter-spacing="3" text-anchor="middle">${n}</text>`});
+  o+=`<path d="${d(GEO.delaware)}" fill="none" stroke="#0e2a3b" stroke-width="${Math.max(10,1000*V.sc).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  o+=`<path d="${d(GEO.schuylkill)}" fill="none" stroke="#0e2a3b" stroke-width="${Math.max(6,240*V.sc).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  GEO.ew.forEach(([n,b,major])=>{const a=[ewLat(b,-75.2250),-75.2250],z=[ewLat(b,-75.0900),-75.0900];
+    o+=`<path d="${d([a,z])}" stroke="${major?'#1f3a50':'#12222f'}" stroke-width="${major?2.4:1.1}" fill="none"/>`});
+  GEO.ns.forEach(([n,l0,major])=>{const a=[39.86,nsLng(l0,39.86)],z=[40.02,nsLng(l0,40.02)];
+    o+=`<path d="${d([a,z])}" stroke="${major?'#1f3a50':'#12222f'}" stroke-width="${major?2.4:1.1}" fill="none"/>`});
+  const lab=(t,lat,lng,rot)=>{const q=P(lat,lng);return `<text x="${q[0].toFixed(1)}" y="${q[1].toFixed(1)}" fill="#3a5568" font-family="JetBrains Mono,monospace" font-size="10.5" letter-spacing="2" text-anchor="middle" transform="rotate(${rot||0} ${q[0].toFixed(1)} ${q[1].toFixed(1)})">${t}</text>`};
+  o+=lab('MARKET ST',ewLat(39.9524,-75.2012)-.0006,-75.2012,-9)+lab('WALNUT ST',ewLat(39.9492,-75.2012)-.0006,-75.2012,-9)+lab('SPRUCE ST',ewLat(39.9460,-75.2012)-.0006,-75.2012,-9)
+    +lab('BROAD ST',39.9690,nsLng(-75.1635,39.9690)+.0009,-80)+lab('34TH ST',39.9680,nsLng(-75.1932,39.9680)+.0009,-80)
+    +lab('SCHUYLKILL RIVER',39.9675,-75.1860,-60)+lab('DELAWARE RIVER',39.9300,-75.1405,-75)
+    +lab('UNIVERSITY CITY',39.9560,-75.2010,0)+lab('CENTER CITY',39.9540,-75.1620,0)+lab('NAVY YARD',39.8915,-75.1790,0)+lab('SOUTH PHILADELPHIA',39.9300,-75.1700,0)+lab('NORTH PHILADELPHIA',39.9810,-75.1700,0);
+  const c=P(USER.lat,USER.lng);
+  o+=`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="${(S.rad*1000*V.sc).toFixed(1)}" fill="rgba(94,224,234,.05)" stroke="#5ee0ea" stroke-opacity=".5" stroke-dasharray="6 8" stroke-width="2"/>`;
+  return o+'</svg>';
+}
+let lastSig=null,VIEW=null,ZOOM=1;
+function spread(items,fixed){   // push overlapping pins apart (pixel space 1200x800)
+  const MIN=38;
+  items.forEach((a,i)=>{a.x=a.ox;a.y=a.oy;a.k=i});
+  for(let it=0;it<80;it++){
+    for(let i=0;i<items.length;i++){
+      const a=items[i];
+      for(let j=i+1;j<items.length;j++){
+        const b=items[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+        if(d<MIN){if(d<.01){const t=(i*2.4+j)*1.7;dx=Math.cos(t);dy=Math.sin(t);d=1}
+          const m=(MIN-d)/2/d;a.x-=dx*m;a.y-=dy*m;b.x+=dx*m;b.y+=dy*m}
+      }
+      let dx=a.x-fixed[0],dy=a.y-fixed[1],d=Math.hypot(dx,dy);   // keep clear of the YOU marker
+      if(d<30){if(d<.01){dx=1;dy=0;d=1}const m=(30-d)/d;a.x+=dx*m;a.y+=dy*m}
+    }
+  }
+}
 function renderMap(r){
   const ids=r.map(l=>l.id);
   $('#m-l').textContent=r.length+' lab'+(r.length===1?'':'s')+' within '+S.rad+' km';
-  RING.setRadius(S.rad*1000);
   const sig=ids.join()+'|'+S.rad;
-  if(sig!==lastSig){
-    const pts=[[USER.lat,USER.lng],...r.map(l=>[l.lat,l.lng])];
-    MAP.fitBounds(L.latLngBounds(pts).pad(.25),{padding:[30,30],maxZoom:15.5,animate:lastSig!==null});lastSig=sig}
-  LAYER.clearLayers();
-  L.marker([USER.lat,USER.lng],{icon:L.divIcon({className:'',html:'<div class="you"><span>YOU</span></div>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false,zIndexOffset:500}).addTo(LAYER);
-  LABS.forEach(l=>{const n=ids.indexOf(l.id);
-    if(n<0){L.circleMarker([l.lat,l.lng],{radius:4,color:'#2a4358',fillColor:'#2a4358',fillOpacity:1,weight:1,interactive:false}).addTo(LAYER);return}
-    L.marker([l.lat,l.lng],{icon:L.divIcon({className:'',html:`<button class="pin" data-id="${l.id}" aria-label="${l.name}">${n+1}</button>`,iconSize:[34,34],iconAnchor:[17,17]}),riseOnHover:true})
-     .bindTooltip(`<b>${l.name}</b><span>${l.equip} · $${l.price}/hr · ${l.dist.toFixed(1)} km</span>`,{direction:'top',offset:[0,-18],className:'ltip'})
-     .on('click',()=>gotoLab(l.id)).on('mouseover',()=>hlLab(l.id)).on('mouseout',()=>hlLab(null)).addTo(LAYER)});
+  if(sig!==lastSig){ZOOM=1;lastSig=sig}
+  VIEW=fitView([[USER.lat,USER.lng],...r.map(l=>[l.lat,l.lng])],ZOOM);
+  const you=VIEW.P(USER.lat,USER.lng);
+  const items=r.map(l=>{const q=VIEW.P(l.lat,l.lng);return{id:l.id,ox:q[0],oy:q[1],vis:q[0]>-20&&q[0]<1220&&q[1]>-20&&q[1]<820}});
+  const shown=items.filter(a=>a.vis);
+  spread(shown,you);
+  const leaders=shown.map(a=>`<line x1="${a.ox.toFixed(1)}" y1="${a.oy.toFixed(1)}" x2="${a.x.toFixed(1)}" y2="${a.y.toFixed(1)}" stroke="#5ee0ea" stroke-opacity=".4" stroke-width="1"/><circle cx="${a.ox.toFixed(1)}" cy="${a.oy.toFixed(1)}" r="3" fill="#5ee0ea" fill-opacity=".8"/>`).join('');
+  $('#mapsvg').innerHTML=mapSVG(VIEW).replace('</svg>',leaders+'</svg>');
+  const pct=(x,y)=>`left:${(x/12).toFixed(2)}%;top:${(y/8).toFixed(2)}%`;
+  $('#pins').innerHTML=`<div class="you" style="${pct(you[0],you[1])}"><span>YOU</span></div>`+
+    LABS.map(l=>{const n=ids.indexOf(l.id);
+      if(n<0){const q=VIEW.P(l.lat,l.lng);return `<span class="dot" style="${pct(q[0],q[1])}"></span>`}
+      const a=items[n];if(!a.vis)return '';return `<button class="pin" data-id="${l.id}" style="${pct(a.x,a.y)}" aria-label="${l.name}">${n+1}</button>`}).join('');
   $('#mlist').innerHTML=r.length?r.map((l,n)=>`<button class="mitem" data-id="${l.id}"><span class="n">${n+1}</span>
       <div><b>${l.name}</b><span>${l.equip} · ${l.dist.toFixed(1)} km</span></div><span class="p">$${l.price}/hr</span></button>`).join('')
     :`<div class="empty"><b>No labs here</b>Try a wider radius.</div>`;
 }
-function hlLab(id){$$('.pin,.mitem').forEach(e=>e.classList.toggle('hl',+e.dataset.id===id))}
+function hlLab(id){
+  $$('.pin,.mitem').forEach(e=>e.classList.toggle('hl',+e.dataset.id===id));
+  const t=$('#tip'),l=LABS.find(x=>x.id===id),pin=document.querySelector(`.pin[data-id="${id}"]`);
+  if(!l||!pin){t.style.opacity=0;return}
+  t.innerHTML=`<b>${l.name}</b><span>${l.equip} · $${l.price}/hr · ${l.dist.toFixed(1)} km</span>`;
+  t.style.left=pin.style.left;t.style.top=pin.style.top;t.style.opacity=1;
+}
 function gotoLab(id){
   track('map_open_lab',{lab:id});
   S.open.add(id);render();
@@ -569,6 +624,11 @@ function gotoLab(id){
   row.scrollIntoView({behavior:'smooth',block:'center'});
   row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),1800);
 }
+$('#zin').onclick=()=>{ZOOM=Math.min(8,ZOOM*1.7);render()};
+$('#zout').onclick=()=>{ZOOM=Math.max(1,ZOOM/1.7);render()};
+$('#pins').onmouseover=e=>{const b=e.target.closest('.pin');hlLab(b?+b.dataset.id:null)};
+$('#pins').onmouseleave=()=>hlLab(null);
+$('#pins').onclick=e=>{const b=e.target.closest('.pin');if(b)gotoLab(+b.dataset.id)};
 $('#mlist').onmouseover=e=>{const b=e.target.closest('[data-id]');hlLab(b?+b.dataset.id:null)};
 $('#mlist').onmouseleave=()=>hlLab(null);
 $('#mlist').onclick=e=>{const b=e.target.closest('[data-id]');if(b)gotoLab(+b.dataset.id)};
